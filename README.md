@@ -64,4 +64,4 @@ hitbox:Start()
 -- Optional: Update position mid-animation
 task.delay(0.1, function()
     hitbox:SetPosition(tool.Handle.CFrame * CFrame.new(0, 0, -6))
-end)
+end) 
