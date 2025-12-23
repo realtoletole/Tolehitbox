@@ -64,4 +64,93 @@ hitbox:Start()
 -- Optional: Update position mid-animation
 task.delay(0.1, function()
     hitbox:SetPosition(tool.Handle.CFrame * CFrame.new(0, 0, -6))
-end) 
+end)
+```
+
+## ToleHitbox.new(params) Parameters
+
+| Parameter             | Type                          | Default       | Description                                                                                  |
+|-----------------------|-------------------------------|---------------|----------------------------------------------------------------------------------------------|
+| SizeOrPart            | Vector3 / number / BasePart   | -             | Shape definition. `Vector3` = box, `number` = radius/magnitude, `BasePart` = custom.        |
+| SpatialOption         | string                        | Varies        | "InBox", "InRadius", "InPart", or "Magnitude" (must match `SizeOrPart`).                     |
+| InitialPosition       | CFrame                        | `CFrame.new()`| Starting position and orientation.                                                          |
+| DebounceTime          | number                        | 0             | Seconds before the same target can be hit again.                                            |
+| Debris (or Lifetime)  | number                        | 0             | Auto-destroy after X seconds (0 = no auto-destroy).                                         |
+| Debug                 | boolean                       | false         | Show red debug visual.                                                                       |
+| Blacklist             | table of Instances            | nil           | Characters/parts to ignore.                                                                 |
+| LookingFor            | string                        | "Humanoid"    | "Humanoid" (characters) or "Object" (raw parts).                                           |
+| VelocityPrediction    | boolean                       | true          | Enable velocity compensation for fast movement.                                             |
+| DotProductRequirement | table or nil                  | nil           | Directional cone restriction (see example below).                                           |
+| UseClient             | Player or nil                 | nil           | Run detection on a specific client's machine (recommended for melee).                       |
+| ID                    | string / number or nil        | nil           | Identifier for bulk clearing hitboxes.                                                      |
+
+# Advanced Examples (Client Sided)
+```lua
+local hitboxParams = {
+    SizeOrPart      = Vector3.new(5, 5, 10),
+    SpatialOption   = "InBox",
+    InitialPosition = someCFrame,
+    UseClient       = player,     -- Runs detection on the attacker's client
+    Debug           = true,
+}
+
+local hitbox, success = ToleHitbox.new(hitboxParams)
+if success then
+    hitbox.HitSomeone:Connect(function(hitCharacters)
+        -- Server-authoritative damage logic here
+    end)
+    hitbox:Start()
+end
+```
+
+# Directional Cone Hit (Only Hits in Front)
+
+```lua
+local hitboxParams = {
+    -- ... other params
+    DotProductRequirement = {
+        PartForVector = tool.Handle,      -- Part used for direction reference
+        VectorType    = "LookVector",     -- Options: "LookVector", "UpVector", "RightVector"
+        DotProduct    = 0.7,              -- 0 = wide cone, 1 = very narrow (exact forward)
+        Negative      = false,            -- Set true to check behind the vector
+    },
+}
+```
+# Attach to Moving Object (e.g., Projectile)
+
+```lua
+local hitbox = ToleHitbox.new(hitboxParams)
+hitbox:Start()
+
+-- Attach hitbox to a moving part (it will follow automatically)
+hitbox:WeldTo(projectile.PrimaryPart, CFrame.new(0, 0, 0))  -- Optional offset CFrame
+
+-- Later, if needed:
+hitbox:Unweld()                    -- Detach from the part
+hitbox:ChangeWeldOffset(CFrame.new(0, 1, 0))  -- Adjust attachment offset
+```
+
+## Hitbox Methods
+
+| Method                           | Description                                                      |
+|---------------------------------|------------------------------------------------------------------|
+| `hitbox:Start()`                 | Begins hit detection.                                            |
+| `hitbox:Stop()`                  | Pauses hit detection.                                            |
+| `hitbox:SetPosition(cframe)`     | Manually moves the hitbox to a new `CFrame`.                    |
+| `hitbox:SetDebug(bool)`          | Toggles the red debug visual on/off.                             |
+| `hitbox:WeldTo(part, offset?)`   | Attaches the hitbox to a moving `BasePart` (follows automatically). |
+| `hitbox:Unweld()`                | Detaches from any welded part.                                   |
+| `hitbox:ChangeWeldOffset(cframe)`| Changes the offset when welded.                                   |
+| `hitbox:ClearTaggedChars()`      | Manually resets debounce tags.                                   |
+| `hitbox:Destroy()`               | Fully cleans up the hitbox (connections, parts, timers).        |
+
+## ToleHitbox Static Functions
+
+| Function                                | Description                                                      |
+|----------------------------------------|------------------------------------------------------------------|
+| `ToleHitbox.ClearHitboxesWithID(id)`    | Destroys all active hitboxes with the matching ID.              |
+| `ToleHitbox.ClearClientHitboxes(player)`| Destroys all hitboxes running on the specified player's client. |
+| `ToleHitbox.GetHitboxCache()`           | Returns a table containing all currently active hitboxes.       |
+
+
+
